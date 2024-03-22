@@ -16,6 +16,7 @@ Weights and Biases Logger
 -------------------------
 """
 import os
+import sys
 from argparse import Namespace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Union
@@ -577,16 +578,16 @@ class WandbLogger(Logger):
     @override
     def after_save_checkpoint(self, checkpoint_callback: ModelCheckpoint) -> None:
         # log checkpoints as artifacts
-        print("after_save_checkpoint function running to log checkpoints as artifacts")
-        print(f"checkpoint_callback: {checkpoint_callback}")
-        print(f"self._log_model: {self._log_model}")
+        sys.stdout.write("after_save_checkpoint function running to log checkpoints as artifacts")
+        sys.stdout.write(f"checkpoint_callback: {checkpoint_callback}")
+        sys.stdout.write(f"self._log_model: {self._log_model}")
         if self._log_model == "all" or self._log_model is True and checkpoint_callback.save_top_k == -1:
-            print("logging all checkpoints, calling _scan_and_log_checkpoints")
+            sys.stdout.write("logging all checkpoints, calling _scan_and_log_checkpoints")
             self._scan_and_log_checkpoints(checkpoint_callback)
         elif self._log_model is True:
-            print(f"Only logging top {checkpoint_callback.save_top_k} checkpoints at the end of training")
+            sys.stdout.write(f"Only logging top {checkpoint_callback.save_top_k} checkpoints at the end of training")
             self._checkpoint_callback = checkpoint_callback
-        print("after_save_checkpoint function finished running")
+        sys.stdout.write("after_save_checkpoint function finished running")
 
     @staticmethod
     @rank_zero_only
@@ -635,26 +636,26 @@ class WandbLogger(Logger):
     @override
     @rank_zero_only
     def finalize(self, status: str) -> None:
-        print("finalize function running...")
-        print(f"status: {status}")
-        print(f"self._checkpoint_callback: {self._checkpoint_callback}")
-        print(f"self._experiment: {self._experiment}")
+        sys.stdout.write("finalize function running...")
+        sys.stdout.write(f"status: {status}")
+        sys.stdout.write(f"self._checkpoint_callback: {self._checkpoint_callback}")
+        sys.stdout.write(f"self._experiment: {self._experiment}")
         if status != "success":
             # Currently, checkpoints only get logged on success
-            print("status is not success, returning")
+            sys.stdout.write("status is not success, returning")
             return
         # log checkpoints as artifacts
         if self._checkpoint_callback and self._experiment is not None:
-            print("logging top checkpoints at the end of training")
+            sys.stdout.write("logging top checkpoints at the end of training")
             self._scan_and_log_checkpoints(self._checkpoint_callback)
 
     def _scan_and_log_checkpoints(self, checkpoint_callback: ModelCheckpoint) -> None:
         import wandb
 
         # get checkpoints to be saved with associated score
-        print("scanning checkpoints to log")
+        sys.stdout.write("scanning checkpoints to log")
         checkpoints = _scan_checkpoints(checkpoint_callback, self._logged_model_time)
-        print(f"loopin through {len(checkpoints)} checkpoints to log")
+        sys.stdout.write(f"loopin through {len(checkpoints)} checkpoints to log")
         # log iteratively all new checkpoints
         for t, p, s, tag in checkpoints:
             metadata = {
@@ -676,14 +677,14 @@ class WandbLogger(Logger):
             }
             if not self._checkpoint_name:
                 self._checkpoint_name = f"model-{self.experiment.id}"
-            print(f"creating artifact with name: {self._checkpoint_name}")
+            sys.stdout.write(f"creating artifact with name: {self._checkpoint_name}")
             artifact = wandb.Artifact(name=self._checkpoint_name, type="model", metadata=metadata)
             artifact.add_file(p, name="model.ckpt")
             aliases = ["latest", "best"] if p == checkpoint_callback.best_model_path else ["latest"]
             try:
                 self.experiment.log_artifact(artifact, aliases=aliases)
-                print(f"logged artifact: {artifact}")
+                sys.stdout.write(f"logged artifact: {artifact}")
             except Exception as e:
-                print(f"An error occurred: {e}")
+                sys.stdout.write(f"An error occurred: {e}")
             # remember logged models - timestamp needed in case filename didn't change (lastkckpt or custom name)
             self._logged_model_time[p] = t

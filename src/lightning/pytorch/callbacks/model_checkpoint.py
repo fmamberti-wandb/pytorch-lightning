@@ -28,7 +28,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any, Dict, Literal, Optional, Set
 from weakref import proxy
-
+import sys
 import torch
 import yaml
 from torch import Tensor
@@ -391,11 +391,11 @@ class ModelCheckpoint(Checkpoint):
         self._last_checkpoint_saved = filepath
 
         # notify loggers
-        print(f"trainer.is_global_zero: {trainer.is_global_zero}")
+        sys.stdout.write(f"trainer.is_global_zero: {trainer.is_global_zero}")
         if trainer.is_global_zero:
-            print("looping through loggers")
+            sys.stdout.write("looping through loggers")
             for logger in trainer.loggers:
-                print(f"running after_save_checkpoint for logger: {logger}")
+                sys.stdout.write(f"running after_save_checkpoint for logger: {logger}")
                 logger.after_save_checkpoint(proxy(self))
 
     @staticmethod
